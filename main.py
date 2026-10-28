@@ -56,10 +56,15 @@ def main(argv=None) -> int:
     from gui.main_window import MainWindow
     from gui.theme import STYLE
 
-    settings_path = Path(a.settings) if a.settings else base / "config" / "settings.json"
+    # 시뮬레이션은 임의 포트의 127.0.0.1 에 연결하므로, 실제 장비 설정 파일과 분리한다.
+    default_name = "settings_simulation.json" if a.simulate else "settings.json"
+    settings_path = Path(a.settings) if a.settings else base / "config" / default_name
     settings = AppSettings()
     if settings_path.exists():
         settings = AppSettings.from_dict(json.loads(settings_path.read_text("utf-8")))
+    if not a.simulate and settings.mixer_ip in ("127.0.0.1", "localhost"):
+        # 이전 버전이 시뮬레이터 주소와 포트를 실제 설정에 저장한 경우 기본값으로 되돌린다.
+        settings.mixer_ip, settings.mixer_port = "", AppSettings().mixer_port
     load_overrides(base / "config" / "instrument_overrides.json")
 
     app = QApplication(sys.argv)
