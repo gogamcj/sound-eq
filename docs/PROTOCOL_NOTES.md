@@ -56,3 +56,4 @@
   * 주파수 `log [20.0 .. 20k00 Hz], 961 steps`
   * Q `log [0.44 .. 10.00], 181 steps`
   * `mdl list [STD, SOUL, E88, E84, F110, PULSAR, MACH4]`, `leq/heq list [PEQ, SHV]`, `mix lin [0 .. 125 %]`
+* `flt` 노드: `lcf log [20.0 .. 2k00 Hz], 641 steps` (로우컷 주파수 최대 2 kHz).
