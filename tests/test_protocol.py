@@ -18,9 +18,9 @@ from mixer.protocol_adapter import MixerTimeout, WingOscAdapter
 # ---- 문서 예시 바이트 형식 -------------------------------------------------
 def test_get_request_is_address_only_with_padding():
     # 문서: "/ch/1/fdr~~~" (12 B) — 인자 없는 조회
-    assert osc_codec.encode("/ch/1/fdr") == b"/ch/1/fdr\x00\x00\x00"
+    assert osc_codec.encode("/ch/1/fdr") == b"/ch/1/fdr\x00\x00\x00,\x00\x00\x00"
     # 문서: "/?~~" = 2f3f0000
-    assert osc_codec.encode("/?") == bytes.fromhex("2f3f0000")
+    assert osc_codec.encode("/?") == bytes.fromhex("2f3f00002c000000")
 
 
 def test_set_float_matches_doc_layout():

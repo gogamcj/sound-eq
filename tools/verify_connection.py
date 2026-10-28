@@ -135,6 +135,29 @@ def icmp_ping(ip: str) -> bool | None:
         return None
 
 
+def probe_osc_variants(rep: Report, ip: str) -> None:
+    """2223 에 여러 형식의 조회를 직접 보내 어떤 형식에 응답하는지 기록한다 (읽기만, 설정 변경 없음)."""
+    variants = {
+        "/? (타입 태그 없음)": b"/?\x00\x00",
+        "/? (빈 타입 태그 ,)": b"/?\x00\x00,\x00\x00\x00",
+        "/ch/1/name (빈 타입 태그 ,)": b"/ch/1/name\x00\x00,\x00\x00\x00",
+    }
+    for port in (wa.OSC_PORT,):  # 2222 는 네이티브 프로토콜이라 임의 바이트를 보내지 않는다
+        for label, pkt in variants.items():
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.settimeout(0.7)
+            try:
+                s.sendto(pkt, (ip, port))
+                data, _ = s.recvfrom(4096)
+                rep.add(f"진단: UDP {port} {label}", True, repr(data[:120]))
+            except socket.timeout:
+                rep.add(f"진단: UDP {port} {label}", False, "응답 없음")
+            except OSError as e:
+                rep.add(f"진단: UDP {port} {label}", False, str(e))
+            finally:
+                s.close()
+
+
 def diagnose_lan(rep: Report, ip: str) -> None:
     """OSC 응답이 없을 때 원인을 좁히기 위한 점검. 믹서 설정은 바꾸지 않는다."""
     local = local_ipv4_for(ip)
@@ -162,6 +185,7 @@ def diagnose_lan(rep: Report, ip: str) -> None:
             rep.add("진단: 포트", None, "2222 는 응답하는데 2223 은 응답하지 않는다. 방화벽 규칙이나 WING 설정 확인 필요")
     else:
         rep.add("진단: 디스커버리 (UDP 2222)", False, "응답 없음")
+    probe_osc_variants(rep, ip)
     if pong and not found:
         rep.add("진단: 방화벽", None, "ping 은 되는데 UDP 응답이 없다. Windows 방화벽에서 Python 을 '개인'과 '공용' 모두 허용")
 

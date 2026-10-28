@@ -49,9 +49,8 @@ def encode(address: str, *args) -> bytes:
         raise ValueError("OSC 주소는 '/' 로 시작해야 한다")
     msg = OscMessage(address, list(args))
     out = encode_string(address)
-    if not args:
-        # WING 문서: 인자 없는 주소 = 값 조회(get)
-        return out
+    # 인자가 없어도 빈 타입 태그 "," 를 붙인다 (OSC 1.0 규격). 인자 없는 주소 = 값 조회(get).
+    # 실장비(FW 3.1.2)에서 타입 태그 없는 "/?" 에 2223 이 응답하지 않아 바꿈 (2026-10-28, 효과는 실장비 확인 필요)
     out += encode_string("," + msg.typetags)
     for a in args:
         if isinstance(a, int):
