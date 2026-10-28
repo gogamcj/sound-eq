@@ -9,6 +9,17 @@ Behringer WING COMPACT용 실시간 라이브 음향 분석과 EQ 추천, 그리
 > ⚠ **현재 상태: 시뮬레이터와 가상 오디오로만 검증된 초기 버전입니다.** 실제 WING COMPACT 연결 검증은 아직 하지 않았습니다.
 > 공연에 쓰기 전에 [docs/HARDWARE_VERIFICATION.md](docs/HARDWARE_VERIFICATION.md)의 절차를 실제 장비로 먼저 통과해야 합니다.
 
+## 처음 사용한다면 (더블클릭만으로)
+
+명령어를 입력하지 않아도 됩니다. 단계별 안내서는 [WING Auto EQ Live 처음 시작하기](https://claude.ai/artifact/1qPptEKiQwsZB7g8zZrzpY)에 있습니다.
+
+| 순서 | 파일 | 하는 일 |
+|---|---|---|
+| 1 | `install.bat` | 처음 한 번 실행합니다. 필요한 부품을 설치합니다 (Python 3.12 필요) |
+| 2 | `run_simulation.bat` | 장비 없이 연습합니다. 가짜 WING과 가짜 소리를 사용합니다 |
+| 3 | `verify_wing.bat` | WING USB와 LAN 연결을 확인하고, `reports` 폴더에 결과를 저장합니다 |
+| 4 | `run.bat` | 실제 프로그램을 실행합니다 |
+
 ## 1. 설치
 
 1. Python 3.12 64-bit를 설치합니다. 설치할 때 "Add to PATH"를 체크합니다.
