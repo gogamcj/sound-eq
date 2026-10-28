@@ -168,3 +168,27 @@ def test_verify_tool_runs_lan_diagnostics_when_no_reply(tmp_path):
     steps = [i["step"] for i in rep.items]
     assert steps[0] == "OSC 응답 (/?)" and rep.items[0]["result"] == "FAIL"
     assert "진단: 이 PC 의 IP" in steps and "진단: 디스커버리 (UDP 2222)" in steps
+
+
+def test_info_request_accepts_real_wing_reply_address():
+    """실장비 FW 3.1.2: '/?' 의 응답 주소는 '/*' 이다 (2026-10-28 보고서)."""
+    import socket
+    import threading
+    from mixer.osc_client import OscClient
+    srv = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    srv.bind(("127.0.0.1", 0))
+    reply = (b"/*\x00\x00,s\x00\x00WING,192.168.0.150,B4ND-WING,wing-compact,"
+             b"0100DAA0603AEV,3.1.2-0-g53fb5e0d:release\x00\x00")
+
+    def serve():
+        _, addr = srv.recvfrom(1024)
+        srv.sendto(reply, addr)
+    threading.Thread(target=serve, daemon=True).start()
+    c = OscClient("127.0.0.1", srv.getsockname()[1], timeout=1.0, retries=0)
+    c.open()
+    try:
+        msg = c.request("/?")
+    finally:
+        c.close()
+        srv.close()
+    assert msg.args[0].startswith("WING,192.168.0.150,B4ND-WING,wing-compact")
