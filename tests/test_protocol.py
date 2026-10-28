@@ -192,3 +192,23 @@ def test_info_request_accepts_real_wing_reply_address():
         c.close()
         srv.close()
     assert msg.args[0].startswith("WING,192.168.0.150,B4ND-WING,wing-compact")
+
+
+REAL_EQ_NODE_DESC = (
+    "  on             int [0 .. 1]\n  mdl            list [STD, SOUL, E88, E84, F110, PULSAR, MACH4]\n"
+    "  mix            lin [0 .. 125 %], 126 steps\n  lg             lin [-15.0 .. +15.0 dB], 301 steps\n"
+    "  lf             log [20.0 .. 20k00 Hz], 961 steps\n  lq             log [0.44 .. 10.00], 181 steps\n"
+    "  leq            list [PEQ, SHV]\n  1g             lin [-15.0 .. +15.0 dB], 301 steps\n"
+    "  1f             log [20.0 .. 20k00 Hz], 961 steps\n  1q             log [0.44 .. 10.00], 181 steps\n    \n"
+)
+
+
+def test_parse_real_eq_node_description():
+    """실장비 FW 3.1.2 의 '/ch/1/eq ,s ?' 응답 (2026-10-28 보고서) 해석."""
+    from mixer import wing_addresses as wa
+    d = wa.parse_node_description(REAL_EQ_NODE_DESC)
+    assert d["1g"]["min"] == -15.0 and d["1g"]["max"] == 15.0 and d["1g"]["unit"] == "dB" and d["1g"]["steps"] == 301
+    assert d["1f"]["min"] == 20.0 and d["1f"]["max"] == 20000.0
+    assert d["1q"]["min"] == 0.44 and d["1q"]["max"] == 10.0
+    assert d["leq"]["options"] == ["PEQ", "SHV"]
+    assert d["mix"]["max"] == 125.0

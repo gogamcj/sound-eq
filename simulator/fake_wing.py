@@ -118,6 +118,19 @@ class FakeWing:
         key = "/".join(parts[2:])
         with self.lock:
             chan = self.channels.get(ch)
+            if chan is not None and msg.args == ["?"] and self.support_describe and "/" not in key:
+                # 실장비처럼 노드 주소에 여러 줄 설명으로 응답 (FW 3.1.2 형식)
+                lines = []
+                for k in chan:
+                    kind = wa.key_kind(k)
+                    if k.startswith(key + "/") and kind in SIM_RANGES:
+                        lo, hi = SIM_RANGES[kind]
+                        unit = {"gain": " dB", "freq": " Hz", "q": ""}[kind]
+                        t = "log" if kind in ("freq", "q") else "lin"
+                        lines.append(f"  {k.split('/', 1)[1]:<14} {t} [{lo} .. {hi}{unit}], 121 steps")
+                if lines:
+                    self._reply(addr, msg.address, "\n".join(lines) + "\n")
+                return
             if chan is None or key not in chan:
                 return
             kind = wa.key_kind(key)

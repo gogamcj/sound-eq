@@ -48,6 +48,10 @@ class MixerAdapter(abc.ABC):
     @abc.abstractmethod
     def describe_param(self, ch: int, key: str) -> dict | None: ...
 
+    def describe_node(self, ch: int, node: str) -> dict[str, dict]:
+        """노드 단위 범위 설명 (키 → 범위). 지원하지 않으면 빈 dict."""
+        return {}
+
     @property
     @abc.abstractmethod
     def last_rtt_ms(self) -> float | None: ...
@@ -128,6 +132,18 @@ class WingOscAdapter(MixerAdapter):
                 if d:
                     return d
         return None
+
+    def describe_node(self, ch: int, node: str) -> dict[str, dict]:
+        """'/ch/N/eq' 같은 노드에 ',s ?' 를 보내 하위 키 범위를 한 번에 받는다 (실장비에서 확인된 방식)."""
+        try:
+            msg = self.client.request(f"/ch/{ch}/{node}", "?")
+        except (OscTimeout, OscNotConnected):
+            return {}
+        out = {}
+        for a in msg.args:
+            if isinstance(a, str):
+                out.update({f"{node}/{k}": v for k, v in wa.parse_node_description(a).items()})
+        return out
 
 
 def discover(broadcast: str = "255.255.255.255", timeout: float = 1.0) -> list[dict]:
