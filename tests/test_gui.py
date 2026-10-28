@@ -39,3 +39,29 @@ def test_main_window_smoke(fake_wing, tmp_path):
     assert not ctl.safety.auto_enabled
     w.close()
     assert not fake_wing.write_log
+
+
+def test_run_job_delivers_every_callback_when_caller_drops_reference():
+    """실장비 GUI 에서 추천 상세가 비어 있던 원인: 호출자가 Job 참조를 버리면 콜백이 사라지거나 멈췄다."""
+    import gc
+    import time
+
+    from PySide6.QtWidgets import QApplication
+
+    from gui.workers import run_job
+    app = QApplication.instance() or QApplication([])
+    got = []
+
+    def work(i):
+        time.sleep(0.005)
+        gc.collect()
+        return i
+
+    for i in range(100):
+        run_job(work, i, on_done=got.append)
+    gc.collect()
+    t0 = time.time()
+    while time.time() - t0 < 10 and len(got) < 100:
+        app.processEvents()
+        time.sleep(0.01)
+    assert sorted(got) == list(range(100))

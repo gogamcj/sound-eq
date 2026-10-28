@@ -7,5 +7,6 @@ data/
 logs/
 reports/
 config/settings.json
+config/settings_simulation.json
 config/instrument_overrides.json
 .pytest_cache/
