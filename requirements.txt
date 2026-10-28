@@ -1,0 +1,7 @@
+# Python 3.12 (64-bit, Windows 10/11) 기준. 3.13 도 동작 확인(리눅스 테스트 환경).
+numpy>=1.26
+scipy>=1.12
+sounddevice>=0.4.7      # Windows 휠에 PortAudio(ASIO 포함 빌드) 동봉
+PySide6>=6.6
+pytest>=8.0             # 테스트용
+pyinstaller>=6.5        # 실행 파일 빌드용

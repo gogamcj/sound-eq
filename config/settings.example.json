@@ -1,0 +1,49 @@
+{
+  "mixer_ip": "",
+  "mixer_port": 2223,
+  "osc_timeout_s": 0.5,
+  "allow_fallback_ranges": false,
+  "analyzer": {
+    "n_fft": 4096,
+    "hop": 1024,
+    "window": "hann",
+    "silence_db": -60.0,
+    "low_signal_db": -45.0,
+    "clip_threshold": 0.999,
+    "clip_hold_s": 2.0,
+    "long_tc_s": 12.0,
+    "short_tc_s": 0.15,
+    "transient_jump_db": 6.0,
+    "prominence_db": 3.0
+  },
+  "engine": {
+    "min_analysis_seconds": 8.0,
+    "full_confidence_seconds": 30.0,
+    "analysis_tap": "pre_eq",
+    "allow_boost": true,
+    "max_boost_db": 2.0,
+    "feedback_warn_score": 0.5,
+    "feedback_notch_score": 0.8,
+    "notch_q": 8.0,
+    "notch_max_cut_db": 6.0,
+    "max_notches": 2
+  },
+  "safety": {
+    "max_step_db": 1.5,
+    "max_cumulative_db": 6.0,
+    "min_interval_s": 20.0,
+    "max_bands_per_step": 1,
+    "auto_min_confidence": 0.6,
+    "require_confirmed_instrument": true,
+    "auto_allow_boost": false,
+    "auto_allow_notch": false,
+    "auto_notch_min_score": 0.85,
+    "max_notches_per_channel": 2,
+    "max_notch_cut_db": 6.0,
+    "worsen_threshold_db": 1.0,
+    "stop_on_feedback_score": 0.8,
+    "max_auto_freq_shift_oct": 0.5
+  },
+  "auto_tick_s": 1.0,
+  "eq_cache_max_age_s": 5.0
+}
