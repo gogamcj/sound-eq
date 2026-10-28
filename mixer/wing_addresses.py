@@ -27,6 +27,8 @@ NATIVE_PORT = 2222       # 문서: "ports 2223 [UDP], and 2222 [UDP, TCP]"
 DISCOVERY_PORT = 2222    # 문서: 'WING?' 5바이트 UDP 데이터그램을 2222 로
 DISCOVERY_MESSAGE = b"WING?"
 INFO_ADDRESS = "/?"      # 문서: "/?" → ",s" "WING,ip,name,model,serial,fw"
+# 실장비 확인 (WING COMPACT FW 3.1.2, 2026-10-28): "/?" 의 응답은 주소 "/*" 로 온다.
+REPLY_ADDRESS = {INFO_ADDRESS: "/*"}
 
 # WING 콘솔은 입력 48개(ch + aux). 일반적으로 ch 40 + aux 8 로 알려져 있으나
 # 문서 본문에서 ch 개수를 직접 확인하지 못했으므로 장비 질의로 확인한다.

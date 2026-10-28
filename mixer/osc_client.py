@@ -12,6 +12,7 @@ import time
 from dataclasses import dataclass
 
 from . import osc_codec
+from . import wing_addresses as wa
 from .wing_addresses import OSC_PORT, parse_wing_number
 
 log = logging.getLogger(__name__)
@@ -112,9 +113,8 @@ class OscClient:
                 continue
             self.stats["received"] += 1
             self.last_rx_time = time.monotonic()
-            key = msg.address.rstrip("*")
             with self._lock:
-                waiters = self._waiters.get(key)
+                waiters = self._waiters.get(msg.address) or self._waiters.get(msg.address.rstrip("*"))
                 if waiters:
                     ev, box = waiters.pop(0)
                     box.append(msg)
@@ -136,18 +136,19 @@ class OscClient:
         """요청을 보내고 같은 주소의 응답을 기다린다. 재시도 후에도 없으면 OscTimeout."""
         timeout = self.timeout if timeout is None else timeout
         retries = self.retries if retries is None else retries
+        key = wa.REPLY_ADDRESS.get(address, address)
         for attempt in range(retries + 1):
             ev = threading.Event()
             box: list = []
             with self._lock:
-                self._waiters.setdefault(address, []).append((ev, box))
+                self._waiters.setdefault(key, []).append((ev, box))
             t0 = time.perf_counter()
             self.send(address, *args)
             if ev.wait(timeout):
                 self.last_rtt_ms = (time.perf_counter() - t0) * 1000
                 return box[0]
             with self._lock:
-                lst = self._waiters.get(address, [])
+                lst = self._waiters.get(key, [])
                 if (ev, box) in lst:
                     lst.remove((ev, box))
             self.stats["timeouts"] += 1

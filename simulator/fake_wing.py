@@ -106,7 +106,7 @@ class FakeWing:
     def _handle(self, msg: osc_codec.OscMessage, addr) -> None:
         if msg.address == "/?":
             ip = self.address[0]
-            self._reply(addr, "/?", f"WING,{ip},SIM,SIMULATOR-not-real-hardware,NO_SERIAL,sim-0.1")
+            self._reply(addr, "/*", f"WING,{ip},SIM,SIMULATOR-not-real-hardware,NO_SERIAL,sim-0.1")
             return
         parts = msg.address.strip("/").split("/")
         if len(parts) < 3 or parts[0] != "ch":
