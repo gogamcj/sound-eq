@@ -190,6 +190,33 @@ def diagnose_lan(rep: Report, ip: str) -> None:
         rep.add("진단: 방화벽", None, "ping 은 되는데 UDP 응답이 없다. Windows 방화벽에서 Python 을 '개인'과 '공용' 모두 허용")
 
 
+def probe_describe_raw(rep: Report, ip: str, port: int, ch: int) -> None:
+    """범위 질의의 실제 응답을 바이트 그대로 기록한다 (문서상 조회 인자 '?', '#' 만 보낸다)."""
+    from mixer import osc_codec
+    queries = [(f"/ch/{ch}/eq/1g", "?"), (f"/ch/{ch}/eq/1g", "#"), (f"/ch/{ch}/eq/1f", "?"),
+               (f"/ch/{ch}/eq/1q", "?"), (f"/ch/{ch}/flt/lcf", "?"), (f"/ch/{ch}/eq", "?")]
+    raw_log = []
+    for addr, arg in queries:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(0.8)
+        got = []
+        try:
+            s.sendto(osc_codec.encode(addr, arg), (ip, port))
+            while len(got) < 5:
+                data, _ = s.recvfrom(65536)
+                got.append(data)
+        except socket.timeout:
+            pass
+        except OSError as e:
+            got.append(str(e).encode())
+        finally:
+            s.close()
+        raw_log.append({"query": f"{addr} ,s {arg}", "replies": [g.hex() for g in got]})
+        rep.add(f"원시 응답: {addr} ,s {arg}", bool(got),
+                " / ".join(repr(g[:300]) for g in got) if got else "응답 없음")
+    rep.data["describe_raw"] = raw_log
+
+
 def check_lan(rep: Report, ip: str, port: int, ch: int, write_ch: int | None, confirm_write: bool) -> None:
     ad = WingOscAdapter(ip, port, timeout=0.5, retries=1)
     ad.open()
@@ -227,6 +254,12 @@ def check_lan(rep: Report, ip: str, port: int, ch: int, write_ch: int | None, co
                 f"{len(got)}/{len(ranges)}개 해석됨" + ("" if got else " — 범위를 모르면 프로그램은 쓰기를 거부한다"))
         for k, v in got.items():
             rep.add("  범위", None, f"{k}: {v['min']} .. {v['max']} {v.get('unit', '')}")
+        after = read_channel(ad, ch)
+        changed = [k for k, v in st.values.items() if k in after.values and after.values[k].raw != v.raw
+                   and after.values[k].text != v.text]
+        rep.add("범위 질의 후 값 변화 없음", not changed, "변화 없음" if not changed else f"바뀐 키: {changed}")
+        if not got:
+            probe_describe_raw(rep, ip, port, ch)
         if write_ch is None:
             return
         if not confirm_write:

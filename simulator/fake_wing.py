@@ -128,6 +128,8 @@ class FakeWing:
                     t = "log" if kind in ("freq", "q") else "lin"
                     self._reply(addr, msg.address, f"{key.split('/')[-1]} {t} [{lo} .. {hi} {unit}], 121 steps")
                 return
+            if msg.args in (["#"], ["*"]):
+                return  # 시뮬레이터는 '#', '*' 조회를 흉내 내지 않는다
             if msg.args:
                 if self.ignore_writes:
                     return
