@@ -40,6 +40,7 @@ class MainWindow(QMainWindow):
         self.sim_note = simulation_note
         self.selected = -1
         self._busy = False
+        self._busy_since = 0.0
         self._last_overview = 0.0
         self._last_detail = 0.0
         self._msg_seen = 0
@@ -165,6 +166,8 @@ class MainWindow(QMainWindow):
         now = time.monotonic()
         if self.selected >= 0 and ctl.analyzer:
             self._update_spectrum()
+            if self._busy and now - self._busy_since > 15.0:
+                self._busy = False  # 응답 없는 작업 때문에 상세 화면이 영영 멈추지 않도록
             if now - self._last_detail > 2.0 and not self._busy:
                 self._last_detail = now
                 self._refresh_recommendation()
@@ -250,6 +253,7 @@ class MainWindow(QMainWindow):
     def _refresh_recommendation(self):
         i = self.selected
         self._busy = True
+        self._busy_since = time.monotonic()
 
         def done(rec):
             self._busy = False
