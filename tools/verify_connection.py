@@ -14,8 +14,12 @@
 from __future__ import annotations
 
 import argparse
+import ipaddress
 import json
 import math
+import platform
+import socket
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -111,6 +115,57 @@ def check_audio(rep: Report, device_index: int | None, test_seconds: float) -> N
             rep.add("  레벨", None, f"USB {x['usb_ch']}: RMS {x['rms_db']} dBFS / Peak {x['peak_db']} dBFS")
 
 
+def local_ipv4_for(target: str) -> str | None:
+    """target 으로 갈 때 Windows 가 쓰는 이 PC 의 IP (UDP connect 는 패킷을 보내지 않는다)."""
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect((target, wa.OSC_PORT))
+        return s.getsockname()[0]
+    except OSError:
+        return None
+    finally:
+        s.close()
+
+
+def icmp_ping(ip: str) -> bool | None:
+    flag = ["-n", "1", "-w", "1000"] if platform.system() == "Windows" else ["-c", "1", "-W", "1"]
+    try:
+        return subprocess.run(["ping", *flag, ip], capture_output=True, timeout=5).returncode == 0
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+
+
+def diagnose_lan(rep: Report, ip: str) -> None:
+    """OSC 응답이 없을 때 원인을 좁히기 위한 점검. 믹서 설정은 바꾸지 않는다."""
+    local = local_ipv4_for(ip)
+    if local == ip:
+        rep.add("진단: 이 PC 의 IP", False, f"{ip} 는 이 PC 자신의 주소다. WING 화면의 SETUP 에서 WING 의 IP 를 확인")
+    elif local is None:
+        rep.add("진단: 이 PC 의 IP", False, f"{ip} 로 가는 경로가 없다. 랜 케이블과 네트워크 어댑터 확인")
+    else:
+        same = ipaddress.ip_address(local) in ipaddress.ip_network(f"{ip}/24", strict=False)
+        rep.add("진단: 이 PC 의 IP", same,
+                f"{local} → WING {ip}" + ("" if same else
+                " — 앞 세 자리가 다르다. 같은 공유기에 연결하거나 PC IP 를 같은 대역으로 설정 (LAN_SETUP.md)"))
+    pong = icmp_ping(ip)
+    rep.add("진단: ping", pong,
+            {True: "응답 있음 (케이블과 IP 는 정상. 방화벽이나 포트 문제일 가능성이 큼)",
+             False: "응답 없음 (IP 가 틀렸거나, 케이블이 다른 네트워크에 연결됨)",
+             None: "ping 실행 실패"}[pong])
+    found = discover(timeout=1.5) + discover(broadcast=ip, timeout=1.0)
+    if found:
+        ips = sorted({d.get("ip") or d.get("from") for d in found})
+        rep.add("진단: 디스커버리 (UDP 2222)", True, f"응답: {json.dumps(found, ensure_ascii=False)}")
+        if ip not in ips:
+            rep.add("진단: IP 불일치", False, f"찾은 WING 의 IP 는 {ips} 이다. 이 주소로 다시 실행")
+        else:
+            rep.add("진단: 포트", None, "2222 는 응답하는데 2223 은 응답하지 않는다. 방화벽 규칙이나 WING 설정 확인 필요")
+    else:
+        rep.add("진단: 디스커버리 (UDP 2222)", False, "응답 없음")
+    if pong and not found:
+        rep.add("진단: 방화벽", None, "ping 은 되는데 UDP 응답이 없다. Windows 방화벽에서 Python 을 '개인'과 '공용' 모두 허용")
+
+
 def check_lan(rep: Report, ip: str, port: int, ch: int, write_ch: int | None, confirm_write: bool) -> None:
     ad = WingOscAdapter(ip, port, timeout=0.5, retries=1)
     ad.open()
@@ -120,6 +175,7 @@ def check_lan(rep: Report, ip: str, port: int, ch: int, write_ch: int | None, co
             info = ad.ping()
         except MixerError as e:
             rep.add("OSC 응답 (/?)", False, f"{ip}:{port} 응답 없음: {e}. IP, 같은 서브넷, 방화벽(UDP) 확인")
+            diagnose_lan(rep, ip)
             return
         rep.add("OSC 응답 (/?)", True, f"{(time.perf_counter() - t0) * 1000:.1f} ms, model={info.model}, "
                 f"name={info.name}, fw={info.firmware}, serial={info.serial}")
