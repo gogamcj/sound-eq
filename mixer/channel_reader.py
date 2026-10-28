@@ -44,10 +44,15 @@ def read_values(adapter: MixerAdapter, ch: int, keys: list[str]) -> dict:
 def learn_ranges(adapter: MixerAdapter, validator: ParameterValidator, ch: int = 1) -> dict[str, dict | None]:
     """쓰기 대상 키의 범위를 장비에 질의 (',s ?'). 결과는 validator 에 저장."""
     out = {}
+    node_desc: dict[str, dict] = {}
+    for node in sorted({k.split("/")[0] for k in wa.WRITABLE_KEYS if "/" in k}):
+        node_desc.update(adapter.describe_node(ch, node))
     for key in sorted(wa.WRITABLE_KEYS):
         if wa.key_kind(key) not in ("gain", "freq", "q"):
             continue
-        desc = adapter.describe_param(ch, key)
+        desc = node_desc.get(key)
+        if desc is None and not node_desc:
+            desc = adapter.describe_param(ch, key)  # 노드 설명을 못 받았을 때만 leaf 질의
         out[key] = desc
         validator.learn_from_description(key, desc)
     return out

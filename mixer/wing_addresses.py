@@ -133,6 +133,23 @@ def parse_description(text: str) -> dict | None:
     return None
 
 
+def parse_node_description(text: str) -> dict[str, dict]:
+    """노드에 ',s ?' 를 보냈을 때 오는 여러 줄 설명을 키별로 해석한다.
+
+    실장비 확인 (WING COMPACT FW 3.1.2, 2026-10-28): leaf 주소(/ch/1/eq/1g)는 ',s ?' 에 응답하지 않고,
+    노드 주소(/ch/1/eq)는 한 줄에 하나씩 "  1g   lin [-15.0 .. +15.0 dB], 301 steps" 형식으로 응답한다.
+    """
+    out = {}
+    for line in text.splitlines():
+        parts = line.strip().split(None, 1)
+        if len(parts) != 2:
+            continue
+        d = parse_description(parts[1])
+        if d:
+            out[parts[0]] = d
+    return out
+
+
 def parse_info_reply(text: str) -> dict:
     """'WING,192.168.1.71,PGM,ngc-full,NO_SERIAL,1.07.2-...' → dict (문서의 '/?' 및 디스커버리 응답 형식)."""
     parts = text.split(",")
