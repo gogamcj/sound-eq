@@ -316,7 +316,11 @@ class MainWindow(QMainWindow):
 
     def _apply(self, items):
         i = self.selected
-        if i < 0 or not items:
+        if i < 0:
+            QMessageBox.information(self, "적용", "왼쪽 목록에서 채널을 먼저 선택하세요.")
+            return
+        if not items:
+            QMessageBox.information(self, "적용", "추천 표에서 적용할 항목의 체크칸을 켠 뒤 다시 누르세요.")
             return
         self.ctl.ch_status[i] = ChannelStatus.APPLYING
         self.detail.btn_apply.setEnabled(False)
@@ -324,7 +328,8 @@ class MainWindow(QMainWindow):
         def done(results):
             r = results[0]
             if r.status == ApplyStatus.VERIFIED:
-                QMessageBox.information(self, "적용 결과", f"적용 완료 및 재조회 확인\n재조회 값: {r.after}")
+                QMessageBox.information(self, "적용 결과", f"믹서 {r.ch}번 채널에 적용 완료 및 재조회 확인\n"
+                                                           f"재조회 값: {r.after}")
             elif r.ok:
                 QMessageBox.information(self, "적용 결과", r.status.value)
             else:
