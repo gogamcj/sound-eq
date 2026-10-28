@@ -159,3 +159,12 @@ def test_connection_lost_and_reconnect(fake_wing):
     assert cm.connected_event.wait(3), "자동 재연결 실패"
     cm.stop()
     assert LinkState.LOST in states
+
+
+def test_verify_tool_runs_lan_diagnostics_when_no_reply(tmp_path):
+    from tools import verify_connection as vc
+    rep = vc.Report(simulated=False)
+    vc.check_lan(rep, "127.0.0.1", 1, 1, None, False)   # 아무도 듣지 않는 포트
+    steps = [i["step"] for i in rep.items]
+    assert steps[0] == "OSC 응답 (/?)" and rep.items[0]["result"] == "FAIL"
+    assert "진단: 이 PC 의 IP" in steps and "진단: 디스커버리 (UDP 2222)" in steps
